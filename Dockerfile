@@ -7,9 +7,14 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY package.json package-lock.json* ./
+# 🌟 Install pnpm globally using the pre-installed npm tool
+RUN npm install -g pnpm
 
-RUN pnpm ci --omit=dev && pnpm cache clean --force
+# 🌟 Copy your package.json and pnpm lockfile
+COPY package.json pnpm-lock.yaml* ./
+
+# 🌟 Run a clean, production-only install using pnpm syntax
+RUN pnpm install --frozen-lockfile --prod && pnpm cache clean --force
 
 COPY . .
 
