@@ -9,10 +9,10 @@ ENV NODE_ENV=production
 
 COPY package.json package-lock.json* ./
 
-RUN npm ci --omit=dev && npm cache clean --force
+RUN pnpm ci --omit=dev && pnpm cache clean --force
 
 COPY . .
 
-RUN npm run build
+RUN pnpm run build
 
-CMD ["npm", "run", "docker-start"]
+CMD ["pnpm", "run", "docker-start"]
