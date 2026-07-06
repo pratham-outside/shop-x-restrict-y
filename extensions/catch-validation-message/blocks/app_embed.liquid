@@ -1,0 +1,90 @@
+<div id="RestrictionModalWrapper" style="display: none; position: fixed; z-index: 999999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+  <div style="background-color: #fff; padding: 24px; border-radius: 8px; max-width: 450px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.15); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; position: relative;">
+    <button id="CloseRestrictionModal" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 20px; cursor: pointer; color: #5c5c5c;">&times;</button>
+    <div style="display: flex; align-items: center; margin-bottom: 16px;">
+      <span style="font-size: 24px; margin-right: 12px;">⚠️</span>
+      <h3 style="margin: 0; font-size: 18px; color: #1a1a1a; font-weight: 600;">Cart Restriction Notice</h3>
+    </div>
+    <p id="RestrictionModalMessage" style="margin: 0 0 20px 0; font-size: 14px; color: #4a4a4a; line-height: 1.5;"></p>
+    <button id="AckRestrictionModal" style="width: 100%; padding: 10px; background-color: #008060; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 14px;">Understand</button>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // Cache references to our injected modal DOM nodes
+    const modalWrapper = document.getElementById('RestrictionModalWrapper');
+    const modalMessage = document.getElementById('RestrictionModalMessage');
+    const closeBtn = document.getElementById('CloseRestrictionModal');
+    const ackBtn = document.getElementById('AckRestrictionModal');
+
+    function showPopup(text) {
+      modalMessage.textContent = text;
+      modalWrapper.style.display = 'flex';
+    }
+
+    function hidePopup() {
+      modalWrapper.style.display = 'none';
+    }
+
+    closeBtn.addEventListener('click', hidePopup);
+    ackBtn.addEventListener('click', hidePopup);
+
+    // ==========================================
+    // 🌐 THE NETWORK INTERCEPTOR ENGINE
+    // ==========================================
+    const nativeFetch = window.fetch;
+
+    window.fetch = async function(...args) {
+      const targetUrl = args[0];
+      
+      // Execute the network request natively
+      const response = await nativeFetch.apply(this, args);
+
+      // Check if this network event is pointing towards Shopify's cart adding pipeline
+      if (typeof targetUrl === 'string' && targetUrl.includes('/cart/add')) {
+        
+        // 🌟 CATCH TARGET: 422 is returned when your Shopify Function throws a validation error
+        if (response.status === 422) {
+          try {
+            // Clone the stream to prevent breaking parallel theme reader scripts
+            const errorPayload = await response.clone().json();
+            
+            // Extract the custom dynamic text string compiled by your run.ts validation engine
+            const errorMessage = errorPayload.description || errorPayload.message || "This item is restricted and cannot be added.";
+            
+            // Trigger our beautiful native popup instead of letting the theme crash!
+            showPopup(errorMessage);
+
+            // Attempt to break infinite loading spinners inside the merchant's theme
+            document.querySelectorAll('[data-cart-loading], .loading-overlay__spinner, .spinner').forEach(el => {
+              el.style.display = 'none';
+              el.classList.remove('loading');
+            });
+            
+            const submitButtons = document.querySelectorAll('button[type="submit"][name="add"], .product-form__submit');
+            submitButtons.forEach(btn => {
+              btn.removeAttribute('disabled');
+              btn.classList.remove('loading');
+              const loader = btn.querySelector('.loading-overlay__spinner');
+              if(loader) loader.classList.add('hidden');
+            });
+
+          } catch (e) {
+            console.error("Failed to safely parse validation hook error stream context:", e);
+          }
+        }
+      }
+
+      return response;
+    };
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Cart Restriction Alerts",
+  "target": "body",
+  "settings": []
+}
+{% endschema %}

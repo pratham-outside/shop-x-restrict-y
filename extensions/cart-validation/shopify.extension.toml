@@ -1,0 +1,29 @@
+api_version = "2026-04"
+
+[[extensions]]
+name = "t:name"
+handle = "cart-validation"
+type = "function"
+uid = "2191ae4c-a83e-0302-6711-430e435bd21561c660f5"
+description = "t:description"
+
+  [[extensions.targeting]]
+  target = "cart.validations.generate.run"
+  input_query = "src/cart_validations_generate_run.graphql"
+  export = "cart-validations-generate-run"
+
+ [[metafields.settings]]
+  key = "configuration"
+  namespace = "$app:cart_restriction"
+
+  [extensions.build]
+  command = ""
+  path = "dist/function.wasm"
+
+  # [extensions.input.variables]
+  # namespace = "$app:cart_restriction"
+  # key = "configuration"
+
+  [access_scopes]
+  # Add read_validations and write_validations to your existing list
+  scopes = "read_products, write_products, read_validations, write_validations"

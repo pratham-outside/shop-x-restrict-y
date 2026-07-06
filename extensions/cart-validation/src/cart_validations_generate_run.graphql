@@ -1,0 +1,22 @@
+query RunInput {
+  cart {
+    lines {
+      quantity
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          id
+          product {
+            id
+            title
+          }
+        }
+      }
+    }
+  }
+  validation {
+    metafield(namespace: "$app:cart_restriction", key: "configuration") {
+      value
+    }
+  }
+}
