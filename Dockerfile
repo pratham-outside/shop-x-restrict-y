@@ -7,17 +7,12 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# 🌟 Install pnpm globally using the pre-installed npm tool
-RUN npm install -g pnpm
+COPY package.json package-lock.json* ./
 
-# 🌟 Copy your package.json and pnpm lockfile
-COPY package.json pnpm-lock.yaml* ./
-
-# 🌟 Run a clean, production-only install using pnpm syntax
-RUN pnpm install --frozen-lockfile --prod && pnpm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 COPY . .
 
-RUN pnpm run build
+RUN npm run build
 
-CMD ["pnpm", "run", "docker-start"]
+CMD ["npm", "run", "docker-start"]

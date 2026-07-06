@@ -2,7 +2,7 @@
   "name": "shop-x-restrict-y",
   "private": true,
   "scripts": {
-    "build": "react-router build && pnpm run --prefix extensions/cart-validation build",
+    "build": "react-router build && npm run --prefix extensions/cart-validation build",
     "dev": "shopify app dev",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
