@@ -13,8 +13,8 @@ RUN npm install -g pnpm
 # 📄 Copy the package.json and the pnpm lockfile
 COPY package.json pnpm-lock.yaml* ./
 
-# 🛠️ Install only production dependencies and clear the cache safely
-RUN pnpm install --frozen-lockfile --prod && pnpm cache clean
+# 🛠️ Install ALL dependencies (including devDependencies like Vite) so we can build
+RUN pnpm install --frozen-lockfile && pnpm cache clean
 
 # 📂 Copy the rest of your application code
 COPY . .
