@@ -15,8 +15,9 @@ if (
   delete process.env.HOST;
 }
 
-const host = new URL(process.env.SHOPIFY_APP_URL || "http://localhost")
-  .hostname;
+const host = new URL(
+  process.env.SHOPIFY_APP_URL || "https://shop-x-restrict-y.onrender.com",
+).hostname;
 
 let hmrConfig;
 if (host === "localhost") {
@@ -48,10 +49,7 @@ export default defineConfig({
       allow: ["app", "node_modules"],
     },
   },
-  plugins: [
-    reactRouter(),
-    tsconfigPaths(),
-  ],
+  plugins: [reactRouter(), tsconfigPaths()],
   build: {
     assetsInlineLimit: 0,
   },
