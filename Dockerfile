@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:22-alpine
 RUN apk add --no-cache openssl
 
 EXPOSE 3000
@@ -13,7 +13,7 @@ RUN npm install -g pnpm
 # 📄 Copy the package.json and the pnpm lockfile
 COPY package.json pnpm-lock.yaml* ./
 
-# 🛠️ Install ALL dependencies (including devDependencies like Vite) so we can build
+# 🛠️ Install ALL dependencies so we can build successfully
 RUN pnpm install --frozen-lockfile && pnpm cache clean
 
 # 📂 Copy the rest of your application code
