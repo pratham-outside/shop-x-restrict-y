@@ -7,12 +7,20 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY package.json package-lock.json* ./
+# 📦 Install pnpm globally inside the container
+RUN npm install -g pnpm
 
-RUN npm ci --omit=dev && npm cache clean --force
+# 📄 Copy the package.json and the pnpm lockfile
+COPY package.json pnpm-lock.yaml* ./
 
+# 🛠️ Install only production dependencies and clear the cache safely
+RUN pnpm install --frozen-lockfile --prod && pnpm cache clean
+
+# 📂 Copy the rest of your application code
 COPY . .
 
-RUN npm run build
+# 🏗️ Build the React Router app and the Shopify extension
+RUN pnpm run build
 
-CMD ["npm", "run", "docker-start"]
+# 🚀 Start the application using your production script
+CMD ["pnpm", "run", "docker-start"]

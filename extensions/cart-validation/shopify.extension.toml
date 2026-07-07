@@ -17,7 +17,7 @@ description = "t:description"
   namespace = "$app:cart_restriction"
 
   [extensions.build]
-  command = "npm run build"
+  command = ""
   path = "dist/function.wasm"
 
   # [extensions.input.variables]
