@@ -23,6 +23,15 @@
   "engines": {
     "node": ">=20.19 <22 || >=22.12"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma"
+    ]
+  },
   "dependencies": {
     "@prisma/client": "^6.16.3",
     "@react-router/dev": "^7.12.0",
