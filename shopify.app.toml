@@ -10,7 +10,7 @@ name = "shop-x-restrict-y"
 scopes = "read_validations,write_metaobjects,write_products,write_validations"
 
 [auth]
-redirect_urls = [ "https://shop-x-restrict-y.onrender.com/auth/callback" ]
+redirect_urls = [ "https://shop-x-restrict-y.onrender.com/auth/callback" ,"https://shop-x-restrict-y.onrender.com/auth/shopify/callback", "https://shop-x-restrict-y.onrender.com/api/auth/callback" ]
 
 [webhooks]
 api_version = "2026-10"
