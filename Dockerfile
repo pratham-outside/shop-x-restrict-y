@@ -1,5 +1,5 @@
 FROM node:22-alpine
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl libc6-compat
 
 EXPOSE 3000
 
