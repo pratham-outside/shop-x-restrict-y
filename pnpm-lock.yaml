@@ -54,11 +54,14 @@ importers:
       '@shopify/api-codegen-preset':
         specifier: ^1.2.0
         version: 1.2.2(@types/node@22.19.20)(typescript@5.9.3)
+      '@shopify/app-bridge-types':
+        specifier: ^0.7.1
+        version: 0.7.1
       '@shopify/cli':
         specifier: ^4.3.0
         version: 4.3.0
       '@shopify/polaris-types':
-        specifier: ^1.0.1
+        specifier: ^1.0.7
         version: 1.0.7
       '@types/eslint':
         specifier: ^9.6.1
@@ -1453,6 +1456,9 @@ packages:
 
   '@shopify/app-bridge-types@0.7.0':
     resolution: {integrity: sha512-A/DiGIjCBdd45ijMDKLgXrrGG68so3d25Yaeo0lv8ruWeljHGn3sA+UU1o/5BptSPkikDkgPPl8EQDxe4/KShw==}
+
+  '@shopify/app-bridge-types@0.7.1':
+    resolution: {integrity: sha512-gq1mR/bElUNd7V78uEitmOE1mVgTHXeuTn9CuFFl26pOopY4FZG8rqJlXYt2Yfh3IKfN4y9Nrl9ewligo2Byww==}
 
   '@shopify/cli@4.3.0':
     resolution: {integrity: sha512-5C/8KUXGYrCmftD0QOuEnIBeHS4wLH/7Q/h+imPlUCjaux37SsOEcZ6Rnvaj5YxvqJYzKJQ5dLA425EEU6gB1A==}
@@ -5768,6 +5774,10 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
 
   '@shopify/app-bridge-types@0.7.0':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+
+  '@shopify/app-bridge-types@0.7.1':
     dependencies:
       '@standard-schema/spec': 1.1.0
 

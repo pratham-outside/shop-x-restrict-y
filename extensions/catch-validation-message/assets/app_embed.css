@@ -1,0 +1,71 @@
+#RestrictionModalWrapper {
+  display: none;
+  position: fixed;
+  z-index: 999999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+}
+
+.restriction-modal-content {
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  position: relative;
+}
+
+#CloseRestrictionModal {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #5c5c5c;
+}
+
+.restriction-modal-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.restriction-modal-icon {
+  font-size: 24px;
+  margin-right: 12px;
+}
+
+.restriction-modal-title {
+  margin: 0;
+  font-size: 18px;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+#RestrictionModalMessage {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: #4a4a4a;
+  line-height: 1.5;
+}
+
+#AckRestrictionModal {
+  width: 100%;
+  padding: 10px;
+  background-color: #008060;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
