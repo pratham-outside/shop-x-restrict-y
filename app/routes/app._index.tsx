@@ -3,7 +3,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { useActionData, Form, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 
-import styles from "../styles/app._index.module.css";
+import { ProductMultiSelect } from "../components/ProductMultiSelect";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -171,26 +171,21 @@ export default function Index() {
     );
   };
 
-  // ❌ Helper to remove a single item from the restriction tags array
-  const removeRestrictionTag = (
-    rowId: string,
-    currentSelections: string[],
-    idToRemove: string,
-  ) => {
-    const filtered = currentSelections.filter((id) => id !== idToRemove);
-    updateRow(rowId, "restrictedProductIds", filtered);
-  };
-
   return (
     <s-page heading="Multi-Product Restriction Manager">
       <s-stack gap="base">
         {/* APP EMBED BANNER */}
         <s-banner tone="info" heading="Enable App Embed">
           <s-paragraph>
-            To apply restriction rules, embed the Cart Restriction App theme
-            in your shopify theme editor.
+            To apply restriction rules, embed the Cart Restriction App theme in
+            your shopify theme editor.
           </s-paragraph>
-          <s-button slot="secondary-actions" href={url} target="_blank">
+          <s-button
+            slot="secondary-actions"
+            href={url}
+            target="_blank"
+            icon="external"
+          >
             Activate App Embed
           </s-button>
         </s-banner>
@@ -199,10 +194,11 @@ export default function Index() {
         <Form method="POST">
           <s-stack gap="base">
             {mappings.map((mapping, index) => (
-              <s-section key={mapping.id} heading={`Ruleset Combo #${index + 1}`}>
+              <s-section key={mapping.id}>
                 <s-stack gap="base">
                   {/* REMOVE BUTTON */}
-                  <s-stack direction="inline" justifyContent="end">
+                  <s-stack direction="inline" justifyContent="space-between">
+                    <s-heading>Ruleset Combo #{index + 1}</s-heading>
                     <s-button
                       type="button"
                       onClick={() => removeRow(mapping.id)}
@@ -220,11 +216,15 @@ export default function Index() {
                     label="Select Buy Product:"
                     value={mapping.buyProductId}
                     onChange={(e) =>
-                      updateRow(mapping.id, "buyProductId", e.currentTarget.value)
+                      updateRow(
+                        mapping.id,
+                        "buyProductId",
+                        e.currentTarget.value,
+                      )
                     }
+                    placeholder="Choose Core Product"
                     required
                   >
-                    <s-option value="">--- Choose Core Product ---</s-option>
                     {products.map((p) => (
                       <s-option key={p.id} value={p.id}>
                         {p.title}
@@ -232,77 +232,25 @@ export default function Index() {
                     ))}
                   </s-select>
 
-                  {/* RESTRICTION CONFIGURATION BOX */}
-                  <s-box>
-                    <s-paragraph>
-                      <strong>Select Mapped Restrictions (Max 3):</strong>
-                    </s-paragraph>
-
-                    {/* ACTIVE SELECTION TAG MATRIX */}
-                    {mapping.restrictedProductIds.length > 0 && (
-                      <s-box paddingBlockStart="small-100" paddingBlockEnd="small-200">
-                        <s-stack direction="inline" gap="small-200">
-                          {mapping.restrictedProductIds.map((id) => {
-                            const matchedProduct = products.find(
-                              (p) => p.id === id,
-                            );
-                            return (
-                              <s-chip
-                                key={id}
-                                removable
-                                onRemove={() =>
-                                  removeRestrictionTag(
-                                    mapping.id,
-                                    mapping.restrictedProductIds,
-                                    id,
-                                  )
-                                }
-                              >
-                                {matchedProduct
-                                  ? matchedProduct.title
-                                  : "Selected Product"}
-                              </s-chip>
-                            );
-                          })}
-                        </s-stack>
-                      </s-box>
-                    )}
-
-                    {/* UNDERLYING BACKEND SELECT ELEMENT */}
-                    <select
-                      id={`restricted-${mapping.id}`}
-                      name={`restrictedProductIds_${index}`}
-                      multiple
-                      value={mapping.restrictedProductIds}
-                      onChange={(e) => {
-                        const options = Array.from(
-                          e.target.selectedOptions,
-                          (opt) => opt.value,
-                        );
-                        if (options.length <= 3)
-                          updateRow(mapping.id, "restrictedProductIds", options);
-                      }}
-                      className={styles.restrictedSelect}
-                      required
-                    >
-                      {products
-                        .filter((p) => p.id !== mapping.buyProductId)
-                        .map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.title}
-                          </option>
-                        ))}
-                    </select>
-                  </s-box>
+                  <ProductMultiSelect
+                    index={index}
+                    buyProductId={mapping.buyProductId}
+                    selectedIds={mapping.restrictedProductIds}
+                    products={products}
+                    onChange={(options) =>
+                      updateRow(mapping.id, "restrictedProductIds", options)
+                    }
+                  />
                 </s-stack>
               </s-section>
             ))}
 
-            {/* ACTION TRAIL FOOTER */}
-            <s-divider></s-divider>
-
-            <s-box paddingBlockStart="base">
-              <s-stack direction="inline" justifyContent="space-between" alignItems="center">
+            <s-box>
+              <s-stack
+                direction="inline"
+                justifyContent="space-between"
+                alignItems="center"
+              >
                 {mappings.length < 3 ? (
                   <s-button type="button" onClick={addRow} variant="secondary">
                     Add New Rule Set
