@@ -1,6 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { useActionData, Form, useLoaderData } from "react-router";
+import {
+  useActionData,
+  Form,
+  useLoaderData,
+  useNavigation,
+} from "react-router";
 import { authenticate } from "../shopify.server";
 
 import { ProductMultiSelect } from "../components/ProductMultiSelect";
@@ -132,6 +137,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Index() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
+
+  const [showBanner, setShowBanner] = useState(false);
+
+  useEffect(() => {
+    if (actionData?.success || actionData?.error) {
+      setShowBanner(true);
+      const timer = setTimeout(() => setShowBanner(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [actionData]);
 
   const products: { id: string; title: string }[] = loaderData?.products || [];
   const url = loaderData?.embedUrl || "#";
@@ -259,7 +276,11 @@ export default function Index() {
                   <s-box />
                 )}
 
-                <s-button type="submit" variant="primary">
+                <s-button
+                  type="submit"
+                  variant="primary"
+                  loading={isSubmitting}
+                >
                   Save All Rules
                 </s-button>
               </s-stack>
@@ -268,12 +289,12 @@ export default function Index() {
         </Form>
 
         {/* SERVER MESSAGES */}
-        {actionData?.success && (
+        {showBanner && actionData?.success && (
           <s-banner tone="success" heading="Success">
             <s-paragraph>{actionData.message}</s-paragraph>
           </s-banner>
         )}
-        {actionData?.error && (
+        {showBanner && actionData?.error && (
           <s-banner tone="critical" heading="Error">
             <s-paragraph>{actionData.error}</s-paragraph>
           </s-banner>

@@ -88,7 +88,14 @@ export function ProductMultiSelect({
             placeholder="Search products to restrict..."
             verticalContent={
               selectedIds.length > 0 ? (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", padding: "4px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "4px",
+                    padding: "4px",
+                  }}
+                >
                   {tagsMarkup}
                 </div>
               ) : undefined
