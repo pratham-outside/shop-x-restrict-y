@@ -31,6 +31,26 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }`,
   );
 
+  const query = `#graphql
+  query getActiveTheme {
+    themes(first: 10, roles: [MAIN]) {
+      nodes {
+        id
+        role
+      }
+    }
+  }
+`;
+
+  // Execute GraphQL query with admin credentials
+  const themeEditorResponse = await admin.graphql(query);
+
+  const data = await themeEditorResponse.json();
+  // Shopify GraphQL returns GID: "gid://shopify/OnlineStoreTheme/150132949129"
+  const fullGid = data.data.themes.nodes[0]?.id;
+  // Extract numeric ID from the GID string
+  const themeId = fullGid.split("/").pop();
+
   const resJson = await response.json();
   const jsonString = resJson.data?.currentAppInstallation?.metafield?.value;
   const productsList = resJson.data?.products?.nodes || [];
@@ -53,7 +73,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   const shopName = session.shop.replace(".myshopify.com", "");
-  const embedUrl = `https://admin.shopify.com/store/${shopName}/themes/150132949129/editor?context=apps&appEmbed=81dc38a6886e9463901268bdde6d9825%2Fapp_embed`;
+
+  const embedUrl = `https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor?context=apps&appEmbed=81dc38a6886e9463901268bdde6d9825%2Fapp_embed`;
 
   return { savedMappings, products: productsList, embedUrl };
 };

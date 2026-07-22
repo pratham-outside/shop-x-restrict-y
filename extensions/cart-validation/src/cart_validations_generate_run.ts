@@ -11,7 +11,6 @@ export function cartValidationsGenerateRun(
 
   const configuration = JSON.parse(configurationMetafield);
 
-  console.log("configuration", configuration);
   if (
     configuration.ruleType !== "product_mapping" ||
     !Array.isArray(configuration.mappings)

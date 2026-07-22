@@ -21,7 +21,6 @@ const host = new URL(
 
 let hmrConfig;
 
-console.log(host, "host");
 if (host === "localhost") {
   hmrConfig = {
     protocol: "ws",
