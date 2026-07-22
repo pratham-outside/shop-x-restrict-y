@@ -21,7 +21,7 @@ const shopify = shopifyApp({
     expiringOfflineAccessTokens: true,
   },
   hooks: {
-    afterAuth: async ({ session, admin }) => {
+    afterAuth: async ({ admin }) => {
       const YOUR_FUNCTION_UID = "2191ae4c-a83e-0302-6711-430e435bd21561c660f5";
 
       try {
