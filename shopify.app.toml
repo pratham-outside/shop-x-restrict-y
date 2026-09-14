@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "81dc38a6886e9463901268bdde6d9825"
-application_url = "https://cart-control.onrender.com"
+application_url = "https://shop-x-restrict-y.onrender.com"
 embedded = true
 name = "cart-control"
 
@@ -10,7 +10,7 @@ name = "cart-control"
 scopes = "read_validations,write_metaobjects,write_products,write_validations,read_themes"
 
 [auth]
-redirect_urls = [ "https://cart-control.onrender.com/auth/callback" ,"https://cart-control.onrender.com/auth/shopify/callback", "https://cart-control.onrender.com/api/auth/callback" ]
+redirect_urls = [ "https://shop-x-restrict-y.onrender.com/auth/callback" ,"https://shop-x-restrict-y.onrender.com/auth/shopify/callback", "https://shop-x-restrict-y.onrender.com/api/auth/callback" ]
 
 [webhooks]
 api_version = "2026-10"
