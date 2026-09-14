@@ -12,8 +12,7 @@ const shopify = shopifyApp({
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: ApiVersion.October25,
   scopes: process.env.SCOPES?.split(","),
-  appUrl:
-    process.env.SHOPIFY_APP_URL || "https://shop-x-restrict-y.onrender.com",
+  appUrl: process.env.SHOPIFY_APP_URL || "https://cart-control.onrender.com",
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,

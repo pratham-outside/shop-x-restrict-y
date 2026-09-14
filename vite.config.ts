@@ -16,7 +16,7 @@ if (
 }
 
 const host = new URL(
-  process.env.SHOPIFY_APP_URL || "https://shop-x-restrict-y.onrender.com",
+  process.env.SHOPIFY_APP_URL || "https://cart-control.onrender.com",
 ).hostname;
 
 let hmrConfig;

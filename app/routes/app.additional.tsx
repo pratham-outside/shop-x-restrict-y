@@ -18,7 +18,8 @@ export default function AdditionalPage() {
               specify your anchor <strong>Buy Product</strong>.
             </s-list-item>
             <s-list-item>
-              Select <strong>up to 3 complementary products</strong> to restrict.
+              Select <strong>up to 3 complementary products</strong> to
+              restrict.
             </s-list-item>
             <s-list-item>
               Click the green action submit button to compile and flash your
@@ -34,12 +35,13 @@ export default function AdditionalPage() {
               located at <strong>Shopify Settings ➡️ Checkout</strong>.
             </s-list-item>
             <s-list-item>
-              Scroll directly down until you encounter the specific system submenu
-              area titled <strong>Checkout rules / Validation rules</strong>.
+              Scroll directly down until you encounter the specific system
+              submenu area titled{" "}
+              <strong>Checkout rules / Validation rules</strong>.
             </s-list-item>
             <s-list-item>
-              Find our application container instance row entity listing, click to
-              toggle its status state from disabled to{" "}
+              Find our application container instance row entity listing, click
+              to toggle its status state from disabled to{" "}
               <strong>Active / Enabled</strong>, and press the page header Save
               button.
             </s-list-item>
@@ -49,21 +51,23 @@ export default function AdditionalPage() {
         <s-section heading="✉️ Need Assistance? Technical Support Desk">
           <s-paragraph>
             Are you encountering mapping sync issues or need help tailoring your
-            purchase validation workflows? Reach out to our dedicated support tier
-            directly:
+            purchase validation workflows? Reach out to our dedicated support
+            tier directly:
           </s-paragraph>
           <s-box paddingBlockStart="base" paddingBlockEnd="base">
             <s-stack direction="inline" gap="base" alignItems="center">
               <s-badge tone="success">Email Support</s-badge>
-              <s-link href="mailto:support@cartrestrictionapp.com">
-                support@cartrestrictionapp.com
+              <s-link href="mailto:tech@outside.studio">
+                tech@outside.studio
               </s-link>
             </s-stack>
           </s-box>
           <s-paragraph>
-            <em>*Triage response commitments: Our engineering team monitors incoming
-            request streams 24/7/366 with typical turnarounds settling under 12
-            hours.</em>
+            <em>
+              *Triage response commitments: Our engineering team monitors
+              incoming request streams 24/7/366 with typical turnarounds
+              settling under 12 hours.
+            </em>
           </s-paragraph>
         </s-section>
       </s-stack>
