@@ -210,7 +210,7 @@ export default function Index() {
   };
 
   return (
-    <s-page heading="Multi-Product Restriction Manager">
+    <s-page heading="Cart Control : Add rules to control what goes into the cart">
       <s-stack gap="base">
         {/* APP EMBED BANNER */}
         <s-banner tone="info" heading="Enable App Embed">
