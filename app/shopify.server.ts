@@ -12,8 +12,7 @@ const shopify = shopifyApp({
   apiSecretKey: process.env.SHOPIFY_API_SECRET!,
   apiVersion: ApiVersion.October25,
   scopes: process.env.SCOPES?.split(","),
-  appUrl:
-    process.env.SHOPIFY_APP_URL || "https://shop-x-restrict-y.onrender.com",
+  appUrl: process.env.SHOPIFY_APP_URL!,
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
@@ -22,9 +21,7 @@ const shopify = shopifyApp({
   },
   hooks: {
     afterAuth: async ({ admin }) => {
-      const YOUR_FUNCTION_UID =
-        process.env.MY_FUNCTION_UID ||
-        "2191ae4c-a83e-0302-6711-430e435bd21561c660f5";
+      const YOUR_FUNCTION_UID = process.env.MY_FUNCTION_UID;
 
       try {
         // 1. Activate the Cart Validation Function using the modern 2026-04 mutation
