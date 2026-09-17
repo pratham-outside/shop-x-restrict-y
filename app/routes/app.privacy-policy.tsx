@@ -1,13 +1,3 @@
-import type { MetaFunction } from "react-router";
-
-export const meta: MetaFunction = () => [
-  { title: "Privacy Policy | CartControl" },
-  {
-    name: "description",
-    content: "Privacy Policy for CartControl",
-  },
-];
-
 const sections = [
   { id: "information-we-collect", label: "Information We Collect" },
   { id: "how-we-use-information", label: "How We Use Information" },
