@@ -21,8 +21,9 @@ const shopify = shopifyApp({
   },
   hooks: {
     afterAuth: async ({ admin }) => {
-      const YOUR_FUNCTION_UID = process.env.MY_FUNCTION_UID;
-      console.log("your function uuid", YOUR_FUNCTION_UID);
+      const YOUR_FUNCTION_UID =
+        process.env.MY_FUNCTION_UID ||
+        "2191ae4c-a83e-0302-6711-430e435bd21561c660f5";
 
       try {
         // 1. Activate the Cart Validation Function using the modern 2026-04 mutation
