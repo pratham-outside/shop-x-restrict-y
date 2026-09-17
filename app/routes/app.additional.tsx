@@ -57,9 +57,7 @@ export default function AdditionalPage() {
           <s-box paddingBlockStart="base" paddingBlockEnd="base">
             <s-stack direction="inline" gap="base" alignItems="center">
               <s-badge tone="success">Email Support</s-badge>
-              <s-link href="mailto:tech@outside.studio">
-                tech@outside.studio
-              </s-link>
+              <s-link href="mailto:tech@outside.tech">tech@outside.tech</s-link>
             </s-stack>
           </s-box>
           <s-paragraph>

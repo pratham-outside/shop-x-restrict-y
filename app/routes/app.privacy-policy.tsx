@@ -475,7 +475,7 @@ export default function PrivacyPolicy() {
               </p>
 
               <a
-                href="mailto:tech@outside.studio"
+                href="mailto:tech@outside.tech"
                 style={{
                   display: "inline-block",
                   color: "#202223",
@@ -483,7 +483,7 @@ export default function PrivacyPolicy() {
                   textDecoration: "none",
                 }}
               >
-                tech@outside.studio
+                tech@outside.tech
               </a>
             </section>
           </article>
