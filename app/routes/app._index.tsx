@@ -13,70 +13,118 @@ import { ProductMultiSelect } from "../components/ProductMultiSelect";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
 
-  const response = await admin.graphql(
-    `#graphql
-    query GetAppConfiguration {
-      currentAppInstallation {
-        id
-        metafield(namespace: "cart_restriction_app", key: "configuration") {
-          value
-        }
-      }
-      products(first: 50) {
-        nodes {
+  const [response, themeEditorResponse] = await Promise.all([
+    admin.graphql(
+      `#graphql
+      query GetAppConfiguration {
+        currentAppInstallation {
           id
-          title
+          metafield(
+            namespace: "cart_restriction_app"
+            key: "configuration"
+          ) {
+            value
+          }
         }
-      }
-    }`,
-  );
+        products(first: 50) {
+          nodes {
+            id
+            title
+          }
+        }
+      }`,
+    ),
+    admin.graphql(
+      `#graphql
+      query GetActiveTheme {
+        themes(first: 10, roles: [MAIN]) {
+          nodes {
+            id
+            role
+          }
+        }
+      }`,
+    ),
+  ]);
 
-  const query = `#graphql
-  query getActiveTheme {
-    themes(first: 10, roles: [MAIN]) {
-      nodes {
-        id
-        role
-      }
-    }
+  const [resJson, themeJson] = await Promise.all([
+    response.json(),
+    themeEditorResponse.json(),
+  ]);
+
+  if (
+    (resJson as { errors?: unknown[] }).errors?.length ||
+    (themeJson as { errors?: unknown[] }).errors?.length
+  ) {
+    throw new Response("Failed to load Shopify configuration", {
+      status: 500,
+    });
   }
-`;
 
-  // Execute GraphQL query with admin credentials
-  const themeEditorResponse = await admin.graphql(query);
-
-  const data = await themeEditorResponse.json();
-  // Shopify GraphQL returns GID: "gid://shopify/OnlineStoreTheme/150132949129"
-  const fullGid = data.data.themes.nodes[0]?.id;
-  // Extract numeric ID from the GID string
-  const themeId = fullGid.split("/").pop();
-
-  const resJson = await response.json();
   const jsonString = resJson.data?.currentAppInstallation?.metafield?.value;
-  const productsList = resJson.data?.products?.nodes || [];
-  // const appId =
-  //   resJson.data?.currentAppInstallation?.id?.split("/").pop() || "";
 
-  let savedMappings = [{ id: "1", buyProductId: "", restrictedProductIds: [] }];
+  const productsList = resJson.data?.products?.nodes ?? [];
+
+  let savedMappings = [
+    {
+      id: "1",
+      buyProductId: "",
+      restrictedProductIds: [],
+    },
+  ];
+
   if (jsonString) {
     try {
       const config = JSON.parse(jsonString);
+
       if (
         config.ruleType === "product_mapping" &&
         Array.isArray(config.mappings)
       ) {
         savedMappings = config.mappings;
       }
-    } catch (e) {
-      console.error("JSON parsing error:", e);
+    } catch (error) {
+      console.error("JSON parsing error:", error);
     }
   }
 
+  const fullGid = themeJson.data?.themes?.nodes?.[0]?.id;
+
+  if (!fullGid) {
+    throw new Response("No active theme found", { status: 404 });
+  }
+
+  const themeId = fullGid.split("/").pop();
+
+  // Use the Shopify app API key/client ID.
+  const apiKey = process.env.SHOPIFY_API_KEY;
+
+  if (!apiKey) {
+    throw new Response("Shopify API key is not configured", {
+      status: 500,
+    });
+  }
+
+  // Must match your app embed block's handle.
+  const embedHandle = "app_embed";
+
   const shopName = session.shop.replace(".myshopify.com", "");
 
-  const embedUrl = `https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor?context=apps&appEmbed=81dc38a6886e9463901268bdde6d9825%2Fapp_embed`;
+  const url = new URL(
+    `https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor`,
+  );
 
-  return { savedMappings, products: productsList, embedUrl };
+  url.searchParams.set("context", "apps");
+  url.searchParams.set("template", "index");
+  url.searchParams.set("activateAppId", `${apiKey}/${embedHandle}`);
+
+  const embedUrl = url.toString();
+
+  return {
+    savedMappings,
+    products: productsList,
+    embedUrl,
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
