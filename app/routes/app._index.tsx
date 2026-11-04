@@ -7,123 +7,129 @@ import {
   useNavigation,
 } from "react-router";
 import { authenticate } from "../shopify.server";
-
 import { ProductMultiSelect } from "../components/ProductMultiSelect";
+
+interface ThemeNode {
+  id: string;
+  name: string;
+  role: string;
+}
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
 
-  const [response, themeEditorResponse] = await Promise.all([
-    admin.graphql(
-      `#graphql
-      query GetAppConfiguration {
-        currentAppInstallation {
+  // Single combined query: products + app config + all themes
+  const response = await admin.graphql(
+    `#graphql
+    query GetHomeData {
+      currentAppInstallation {
+        id
+        metafield(
+          namespace: "cart_restriction_app"
+          key: "configuration"
+        ) {
+          value
+        }
+      }
+      products(first: 50) {
+        nodes {
           id
-          metafield(
-            namespace: "cart_restriction_app"
-            key: "configuration"
-          ) {
-            value
-          }
+          title
         }
-        products(first: 50) {
-          nodes {
-            id
-            title
-          }
+      }
+      themes(first: 20) {
+        nodes {
+          id
+          name
+          role
         }
-      }`,
-    ),
-    admin.graphql(
-      `#graphql
-      query GetActiveTheme {
-        themes(first: 10, roles: [MAIN]) {
-          nodes {
-            id
-            role
-          }
-        }
-      }`,
-    ),
-  ]);
+      }
+    }`,
+  );
 
-  const [resJson, themeJson] = await Promise.all([
-    response.json(),
-    themeEditorResponse.json(),
-  ]);
+  const resJson = await response.json();
 
-  if (
-    (resJson as { errors?: unknown[] }).errors?.length ||
-    (themeJson as { errors?: unknown[] }).errors?.length
-  ) {
-    throw new Response("Failed to load Shopify configuration", {
-      status: 500,
-    });
+  if ((resJson as { errors?: unknown[] }).errors?.length) {
+    throw new Response("Failed to load app configuration", { status: 500 });
   }
 
+  // --- Products & saved mappings ---
+  const productsList = resJson.data?.products?.nodes ?? [];
   const jsonString = resJson.data?.currentAppInstallation?.metafield?.value;
 
-  const productsList = resJson.data?.products?.nodes ?? [];
+  let savedMappings: Array<{
+    id: string;
+    buyProductId: string;
+    restrictedProductIds: string[];
+  }> = [{ id: "1", buyProductId: "", restrictedProductIds: [] }];
 
-  let savedMappings = [
-    {
-      id: "1",
-      buyProductId: "",
-      restrictedProductIds: [],
-    },
-  ];
+  let hasConfiguredRules = false;
 
   if (jsonString) {
     try {
       const config = JSON.parse(jsonString);
-
       if (
         config.ruleType === "product_mapping" &&
         Array.isArray(config.mappings)
       ) {
         savedMappings = config.mappings;
+        hasConfiguredRules = config.mappings.some(
+          (m: { buyProductId?: string; restrictedProductIds?: string[] }) =>
+            Boolean(m.buyProductId && m.restrictedProductIds?.length),
+        );
       }
     } catch (error) {
       console.error("JSON parsing error:", error);
     }
   }
 
-  const fullGid = themeJson.data?.themes?.nodes?.[0]?.id;
+  // --- Themes for onboarding theme-selector ---
+  const themesData: ThemeNode[] = resJson.data?.themes?.nodes || [];
+  const themes = themesData.map((t) => {
+    const numericId = t.id.split("/").pop() || "";
+    return {
+      id: t.id,
+      numericId,
+      name: t.name,
+      role: t.role,
+      isLive: t.role.toUpperCase() === "MAIN",
+    };
+  });
 
-  if (!fullGid) {
-    throw new Response("No active theme found", { status: 404 });
-  }
+  const liveTheme = themes.find((t) => t.isLive) || themes[0];
+  const defaultThemeId = liveTheme?.numericId || "";
 
-  const themeId = fullGid.split("/").pop();
-
-  // Use the Shopify app API key/client ID.
+  // --- Deep link fragments ---
+  const shopName = session.shop.replace(".myshopify.com", "");
   const apiKey = process.env.SHOPIFY_API_KEY;
 
   if (!apiKey) {
-    throw new Response("Shopify API key is not configured", {
-      status: 500,
-    });
+    throw new Response("Shopify API key is not configured", { status: 500 });
   }
 
-  // Must match your app embed block's handle.
   const embedHandle = "app_embed";
 
-  const shopName = session.shop.replace(".myshopify.com", "");
-
-  const url = new URL(
-    `https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor`,
+  // Legacy single-theme embed URL (kept for compatibility)
+  const liveThemeId = defaultThemeId;
+  const embedUrl = new URL(
+    `https://admin.shopify.com/store/${shopName}/themes/${liveThemeId}/editor`,
   );
+  embedUrl.searchParams.set("context", "apps");
+  embedUrl.searchParams.set("template", "index");
+  embedUrl.searchParams.set("activateAppId", `${apiKey}/${embedHandle}`);
 
-  url.searchParams.set("context", "apps");
-  url.searchParams.set("template", "index");
-  url.searchParams.set("activateAppId", `${apiKey}/${embedHandle}`);
-
-  const embedUrl = url.toString();
+  const checkoutSettingsUrl = `https://admin.shopify.com/store/${shopName}/settings/checkout`;
 
   return {
     savedMappings,
     products: productsList,
-    embedUrl,
+    hasConfiguredRules,
+    themes,
+    defaultThemeId,
+    shopName,
+    apiKey,
+    embedHandle,
+    checkoutSettingsUrl,
   };
 };
 
@@ -203,6 +209,36 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function StepBadge({ n }: { n: number }) {
+  return (
+    <span
+      style={{
+        background: "#005bd3",
+        color: "#ffffff",
+        borderRadius: "50%",
+        width: "26px",
+        height: "26px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: 700,
+        fontSize: "13px",
+        flexShrink: 0,
+      }}
+    >
+      {n}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export default function Index() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
@@ -220,7 +256,6 @@ export default function Index() {
   }, [actionData]);
 
   const products: { id: string; title: string }[] = loaderData?.products || [];
-  const url = loaderData?.embedUrl || "#";
 
   const [mappings, setMappings] = useState<
     Array<{ id: string; buyProductId: string; restrictedProductIds: string[] }>
@@ -257,118 +292,349 @@ export default function Index() {
     );
   };
 
-  return (
-    <s-page heading="Cart Control : Add rules to control what goes into the cart">
-      <s-stack gap="base">
-        {/* APP EMBED BANNER */}
-        <s-banner tone="info" heading="Enable App Embed">
-          <s-paragraph>
-            To apply restriction rules, embed the Cart Restriction App in your
-            Shopify theme editor. Need guidance? View our{" "}
-            <s-link href="/app/onboarding">step-by-step Onboarding Guide</s-link>.
-          </s-paragraph>
-          <s-button
-            slot="secondary-actions"
-            href={url}
-            target="_blank"
-            icon="external"
-          >
-            Activate App Embed
-          </s-button>
-        </s-banner>
+  // Onboarding: theme selector state
+  const themes = loaderData?.themes || [];
+  const [selectedThemeId, setSelectedThemeId] = useState<string>(
+    loaderData?.defaultThemeId || "",
+  );
 
-        {/* CONFIGURATION FORM */}
-        <Form method="POST">
+  const selectedTheme =
+    themes.find((t) => t.numericId === selectedThemeId) || themes[0];
+
+  const { shopName, apiKey, embedHandle, checkoutSettingsUrl } = loaderData;
+
+  // Deep link dynamically reflects the selected theme
+  const deepLinkUrl = selectedThemeId
+    ? `https://admin.shopify.com/store/${shopName}/themes/${selectedThemeId}/editor?context=apps&template=index&activateAppId=${encodeURIComponent(
+        `${apiKey}/${embedHandle}`,
+      )}`
+    : "#";
+
+  return (
+    <s-page heading="Cart Control">
+      <s-stack gap="base">
+
+        {/* ================================================================
+            ONBOARDING SECTION
+            Placed at the top per Shopify guidelines: "Provide clear
+            post-installation instructions on your app's onboarding page."
+            Covers App Embed Block flow:
+            1. Prompt to select theme
+            2. Screenshots + written instructions
+            3. Deep link CTA
+            ================================================================ */}
+        <s-section heading="Setup: Activate the App Embed on Your Theme">
           <s-stack gap="base">
-            {mappings.map((mapping, index) => (
-              <s-section key={mapping.id}>
+            <s-paragraph>
+              After installing Cart Control, you need to activate the{" "}
+              <strong>Cart Restriction Alerts</strong> app embed in your Shopify
+              theme to show restriction notices to customers on your storefront.
+              This takes less than a minute and requires no code changes.
+            </s-paragraph>
+
+            {/* THEME SELECTION — required by Shopify UX guidelines for embed onboarding */}
+            <div
+              style={{
+                border: "1px solid #dcdfe3",
+                borderRadius: "8px",
+                background: "#fafbfb",
+                padding: "16px 20px",
+              }}
+            >
+              <s-stack gap="base">
+                <s-select
+                  id="themeSelector"
+                  label="Select the theme where you want to activate the app embed:"
+                  value={selectedThemeId}
+                  onChange={(e) => setSelectedThemeId(e.currentTarget.value)}
+                >
+                  {themes.map((t) => (
+                    <s-option key={t.numericId} value={t.numericId}>
+                      {t.name}
+                      {t.isLive ? " (Live)" : " (Draft)"}
+                    </s-option>
+                  ))}
+                </s-select>
+
+                {selectedTheme && (
+                  <s-stack direction="inline" gap="small" alignItems="center">
+                    {selectedTheme.isLive ? (
+                      <s-badge tone="success">Live / Published</s-badge>
+                    ) : (
+                      <s-badge tone="info">Draft Theme</s-badge>
+                    )}
+                    <span style={{ fontSize: "13px", color: "#616161" }}>
+                      {selectedTheme.name}
+                    </span>
+                  </s-stack>
+                )}
+              </s-stack>
+            </div>
+
+            {/* STEP CARDS with screenshots + written instructions */}
+            <s-stack gap="base">
+
+              {/* STEP 1 */}
+              <div
+                style={{
+                  border: "1px solid #dcdfe3",
+                  borderRadius: "8px",
+                  background: "#ffffff",
+                  padding: "20px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                }}
+              >
                 <s-stack gap="base">
-                  {/* REMOVE BUTTON */}
-                  <s-stack direction="inline" justifyContent="space-between">
-                    <s-heading>Ruleset Combo #{index + 1}</s-heading>
-                    <s-button
-                      type="button"
-                      onClick={() => removeRow(mapping.id)}
-                      tone="critical"
-                      variant="secondary"
-                    >
-                      Remove Rule
-                    </s-button>
+                  <s-stack direction="inline" gap="small" alignItems="center">
+                    <StepBadge n={1} />
+                    <s-heading>Click &quot;Activate App Embed&quot;</s-heading>
                   </s-stack>
 
-                  {/* BUY DROPDOWN */}
-                  <s-select
-                    id={`buyProduct-${mapping.id}`}
-                    name="buyProductId"
-                    label="Select Buy Product:"
-                    value={mapping.buyProductId}
-                    onChange={(e) =>
-                      updateRow(
-                        mapping.id,
-                        "buyProductId",
-                        e.currentTarget.value,
-                      )
-                    }
-                    placeholder="Choose Core Product"
-                    required
+                  <s-paragraph>
+                    Use the button below to open the Shopify Theme Editor in a
+                    new tab. It will navigate directly to the{" "}
+                    <strong>App embeds</strong> panel with Cart Control
+                    pre-selected, so you don&apos;t have to search for it.
+                  </s-paragraph>
+
+                  <div
+                    style={{
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      border: "1px solid #e1e3e5",
+                    }}
                   >
-                    {products.map((p) => (
-                      <s-option key={p.id} value={p.id}>
-                        {p.title}
-                      </s-option>
-                    ))}
-                  </s-select>
+                    <img
+                      src="/onboarding/step1-activate-embed.png"
+                      alt="In the app banner, click the Activate App Embed button"
+                      style={{ width: "100%", height: "auto", display: "block" }}
+                    />
+                  </div>
 
-                  <ProductMultiSelect
-                    index={index}
-                    buyProductId={mapping.buyProductId}
-                    selectedIds={mapping.restrictedProductIds}
-                    products={products}
-                    onChange={(options) =>
-                      updateRow(mapping.id, "restrictedProductIds", options)
-                    }
-                  />
+                  <s-stack direction="inline" gap="base" alignItems="center">
+                    <s-button
+                      href={deepLinkUrl}
+                      target="_blank"
+                      variant="primary"
+                      icon="external"
+                    >
+                      Activate App Embed
+                    </s-button>
+                    <span style={{ fontSize: "13px", color: "#616161" }}>
+                      Opens theme editor for{" "}
+                      <strong>{selectedTheme?.name || "your theme"}</strong>
+                    </span>
+                  </s-stack>
                 </s-stack>
-              </s-section>
-            ))}
+              </div>
 
-            <s-box>
-              <s-stack
-                direction="inline"
-                justifyContent="space-between"
-                alignItems="center"
+              {/* STEP 2 */}
+              <div
+                style={{
+                  border: "1px solid #dcdfe3",
+                  borderRadius: "8px",
+                  background: "#ffffff",
+                  padding: "20px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                }}
               >
-                {mappings.length < 3 ? (
-                  <s-button type="button" onClick={addRow} variant="secondary">
-                    Add New Rule Set
-                  </s-button>
-                ) : (
-                  <s-box />
-                )}
+                <s-stack gap="base">
+                  <s-stack direction="inline" gap="small" alignItems="center">
+                    <StepBadge n={2} />
+                    <s-heading>Toggle &quot;Cart Restriction Alerts&quot; to On</s-heading>
+                  </s-stack>
 
-                <s-button
-                  type="submit"
-                  variant="primary"
-                  loading={isSubmitting}
-                >
-                  Save All Rules
-                </s-button>
-              </s-stack>
-            </s-box>
+                  <s-paragraph>
+                    In the Theme Editor sidebar under <strong>App embeds</strong>,
+                    find <strong>Cart Restriction Alerts</strong> (listed under{" "}
+                    <code>cart-control</code>) and switch its toggle to{" "}
+                    <strong>On</strong>.
+                  </s-paragraph>
+
+                  <div
+                    style={{
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      border: "1px solid #e1e3e5",
+                    }}
+                  >
+                    <img
+                      src="/onboarding/step2-toggle-on.png"
+                      alt="In App embeds panel, toggle Cart Restriction Alerts to on"
+                      style={{ width: "100%", height: "auto", display: "block" }}
+                    />
+                  </div>
+                </s-stack>
+              </div>
+
+              {/* STEP 3 */}
+              <div
+                style={{
+                  border: "1px solid #dcdfe3",
+                  borderRadius: "8px",
+                  background: "#ffffff",
+                  padding: "20px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                }}
+              >
+                <s-stack gap="base">
+                  <s-stack direction="inline" gap="small" alignItems="center">
+                    <StepBadge n={3} />
+                    <s-heading>Click &quot;Save&quot; in the Theme Editor</s-heading>
+                  </s-stack>
+
+                  <s-paragraph>
+                    Click the <strong>Save</strong> button in the top-right
+                    corner of the Shopify Theme Editor. App embed changes are
+                    not published to your storefront until you save.
+                  </s-paragraph>
+
+                  <div
+                    style={{
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      border: "1px solid #e1e3e5",
+                    }}
+                  >
+                    <img
+                      src="/onboarding/step3-click-save.png"
+                      alt="Click the Save button in the top-right of the Theme Editor"
+                      style={{ width: "100%", height: "auto", display: "block" }}
+                    />
+                  </div>
+                </s-stack>
+              </div>
+
+            </s-stack>
           </s-stack>
-        </Form>
+        </s-section>
 
-        {/* SERVER MESSAGES */}
-        {showBanner && actionData?.success && (
-          <s-banner tone="success" heading="Success">
-            <s-paragraph>{actionData.message}</s-paragraph>
-          </s-banner>
-        )}
-        {showBanner && actionData?.error && (
-          <s-banner tone="critical" heading="Error">
-            <s-paragraph>{actionData.error}</s-paragraph>
-          </s-banner>
-        )}
+        {/* ================================================================
+            RULE BUILDER FORM
+            ================================================================ */}
+        <s-section heading="Add rules to control what goes into the cart">
+          <s-stack gap="base">
+            <Form method="POST">
+              <s-stack gap="base">
+                {mappings.map((mapping, index) => (
+                  <s-section key={mapping.id}>
+                    <s-stack gap="base">
+                      <s-stack direction="inline" justifyContent="space-between">
+                        <s-heading>Ruleset Combo #{index + 1}</s-heading>
+                        <s-button
+                          type="button"
+                          onClick={() => removeRow(mapping.id)}
+                          tone="critical"
+                          variant="secondary"
+                        >
+                          Remove Rule
+                        </s-button>
+                      </s-stack>
+
+                      <s-select
+                        id={`buyProduct-${mapping.id}`}
+                        name="buyProductId"
+                        label="Select Buy Product:"
+                        value={mapping.buyProductId}
+                        onChange={(e) =>
+                          updateRow(
+                            mapping.id,
+                            "buyProductId",
+                            e.currentTarget.value,
+                          )
+                        }
+                        placeholder="Choose Core Product"
+                        required
+                      >
+                        {products.map((p) => (
+                          <s-option key={p.id} value={p.id}>
+                            {p.title}
+                          </s-option>
+                        ))}
+                      </s-select>
+
+                      <ProductMultiSelect
+                        index={index}
+                        buyProductId={mapping.buyProductId}
+                        selectedIds={mapping.restrictedProductIds}
+                        products={products}
+                        onChange={(options) =>
+                          updateRow(mapping.id, "restrictedProductIds", options)
+                        }
+                      />
+                    </s-stack>
+                  </s-section>
+                ))}
+
+                <s-box>
+                  <s-stack
+                    direction="inline"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    {mappings.length < 3 ? (
+                      <s-button type="button" onClick={addRow} variant="secondary">
+                        Add New Rule Set
+                      </s-button>
+                    ) : (
+                      <s-box />
+                    )}
+
+                    <s-button
+                      type="submit"
+                      variant="primary"
+                      loading={isSubmitting}
+                    >
+                      Save All Rules
+                    </s-button>
+                  </s-stack>
+                </s-box>
+              </s-stack>
+            </Form>
+
+            {/* SERVER MESSAGES */}
+            {showBanner && actionData?.success && (
+              <s-banner tone="success" heading="Success">
+                <s-paragraph>{actionData.message}</s-paragraph>
+              </s-banner>
+            )}
+            {showBanner && actionData?.error && (
+              <s-banner tone="critical" heading="Error">
+                <s-paragraph>{actionData.error}</s-paragraph>
+              </s-banner>
+            )}
+          </s-stack>
+        </s-section>
+
+        {/* ================================================================
+            CHECKOUT VALIDATION REMINDER
+            ================================================================ */}
+        <s-section heading="Enable Cart Validation at Checkout">
+          <s-stack gap="base">
+            <s-paragraph>
+              For restrictions to be enforced at checkout, the{" "}
+              <strong>cart-validation</strong> function must be active in your
+              store settings.
+            </s-paragraph>
+            <s-ordered-list>
+              <s-list-item>
+                Go to{" "}
+                <s-link href={checkoutSettingsUrl} target="_blank">
+                  Shopify Admin → Settings → Checkout
+                </s-link>
+                .
+              </s-list-item>
+              <s-list-item>
+                Scroll to <strong>Checkout rules / Validation rules</strong>.
+              </s-list-item>
+              <s-list-item>
+                Find <strong>cart-validation (Cart Control)</strong> and confirm
+                it is <strong>Active</strong>. Enable it if not.
+              </s-list-item>
+            </s-ordered-list>
+          </s-stack>
+        </s-section>
+
       </s-stack>
     </s-page>
   );
