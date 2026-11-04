@@ -29,7 +29,7 @@ const shopify = shopifyApp({
           `#graphql
       mutation CreateValidation($validation: ValidationCreateInput!) {
         validationCreate(validation: $validation) {
-          cartValidation {
+          validation {
             id
           }
         }
