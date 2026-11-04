@@ -263,8 +263,9 @@ export default function Index() {
         {/* APP EMBED BANNER */}
         <s-banner tone="info" heading="Enable App Embed">
           <s-paragraph>
-            To apply restriction rules, embed the Cart Restriction App theme in
-            your shopify theme editor.
+            To apply restriction rules, embed the Cart Restriction App in your
+            Shopify theme editor. Need guidance? View our{" "}
+            <s-link href="/app/onboarding">step-by-step Onboarding Guide</s-link>.
           </s-paragraph>
           <s-button
             slot="secondary-actions"

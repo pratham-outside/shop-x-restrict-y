@@ -22,7 +22,8 @@ export default function App() {
       <PolarisAppProvider i18n={{}}>
         <s-app-nav>
           <s-link href="/app">Home</s-link>
-          <s-link href="/app/additional">Additional page</s-link>
+          <s-link href="/app/onboarding">Onboarding</s-link>
+          <s-link href="/app/additional">Merchant Guide</s-link>
           <s-link href="/app/privacy-policy">Privacy Policy</s-link>
         </s-app-nav>
         <Outlet />
